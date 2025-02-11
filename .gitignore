@@ -1,0 +1,9 @@
+# Sensitive (or test) Excel files should be ignored
+*.xlsx
+
+# macOS system files
+.DS_Store
+
+# PyInstaller build and distribution directories
+build/
+dist/
