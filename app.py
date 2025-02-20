@@ -19,6 +19,24 @@ def assign_poster_boards(posters, days=2):
     posters['Day'] = ['Day 1'] * (n // days) + ['Day 2'] * (n - n // days)
     # Assign board numbers within each day.
     posters['Board_Number'] = posters.groupby('Day').cumcount() + 1
+
+    # Add Session column (AM/PM)
+    posters.insert(
+        posters.columns.get_loc('Day') + 1,
+        'Session',
+        posters['Board_Number'].apply(lambda x: 'AM' if x % 2 == 1 else 'PM')
+    )
+
+    # For robust sorting (especially if more than 2 days), extract the numeric part of the Day.
+    posters['Day_Num'] = posters['Day'].str.extract('(\d+)').astype(int)
+    # Map Session to sort order: AM first, then PM
+    posters['Session_order'] = posters['Session'].map({'AM': 0, 'PM': 1})
+
+    # Sort by Day number, then by Session and finally by Board_Number
+    posters = posters.sort_values(
+        by=['Day_Num', 'Session_order', 'Board_Number']
+    ).drop(['Day_Num', 'Session_order'], axis =1) # Drop the Day_Num and Session_order columns that were only used for sorting
+
     return posters
 
 def assign_judges(posters, judges, reviews_per_poster):
@@ -65,12 +83,14 @@ def assign_judges(posters, judges, reviews_per_poster):
             judge_assignments[judge].append({
                 'Poster_Title': poster['Poster_Title'],
                 'Day': poster['Day'],
+                'Session': poster['Session'],
                 'Board_Number': poster['Board_Number']
             })
 
         # Build the assigned dictionary for the current poster
         assignment = {
             'Day': poster['Day'],
+            'Session': poster['Session'],
             'Board_Number': poster['Board_Number'],
             'FirstName': poster['FirstName'],
             'LastName': poster['LastName']
