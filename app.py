@@ -52,7 +52,7 @@ def assign_judges(posters, judges, reviews_per_poster):
         # Check if we have enough judges to assign.
         if len(selected_judges) < reviews_per_poster:
             error_message = (
-                f"Error: Not enough judges available for poster 'poster['Poster_Title']' "
+                f"Error: Not enough judges available for poster '{poster['Poster_Title']}' "
                 f"on {poster['Day']} at Board {poster['Board_Number']}. "
                 f"Required {reviews_per_poster} judges, but only {len(selected_judges)} were found. "
                 "Please add more judges or adjust the eligibility criteria."
@@ -85,7 +85,7 @@ def assign_judges(posters, judges, reviews_per_poster):
             'Lab': poster['Lab'],
             'Poster_Title': poster['Poster_Title']
         })
-        
+
         assignment_list.append(assignment) 
     
     # Make it a pandas DF for easier Excel formatting later
