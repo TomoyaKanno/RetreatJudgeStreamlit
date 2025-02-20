@@ -26,8 +26,9 @@ def assign_judges(posters, judges, reviews_per_poster):
     Assign judges to posters in a load-balanced way.
     For each poster, select eligible judges (those not from the same lab, if possible)
     and pick the ones with the fewest assignments so far.
+
     Returns two DataFrames:
-    - poster_assignments_df: each poster's assignment with a comma-separated list of judges.
+    - poster_assignments_df: each poster's assignment with separate judge columns.
     - judge_assignments_df: for each judge, a list of assigned posters with details.
     """
     # Initialize judge load and assignments dictionaries
@@ -48,6 +49,16 @@ def assign_judges(posters, judges, reviews_per_poster):
         # Select the first judges up to the number of "reviews_per_poster"
         selected_judges = sorted_judges[:reviews_per_poster]
 
+        # Check if we have enough judges to assign.
+        if len(selected_judges) < reviews_per_poster:
+            error_message = (
+                f"Error: Not enough judges available for poster 'poster['Poster_Title']' "
+                f"on {poster['Day']} at Board {poster['Board_Number']}. "
+                f"Required {reviews_per_poster} judges, but only {len(selected_judges)} were found. "
+                "Please add more judges or adjust the eligibility criteria."
+            )
+            raise ValueError(error_message)
+
         # Update judge load and record assignment for each selected judge
         for judge in selected_judges:
             judge_load[judge] += 1
@@ -57,33 +68,33 @@ def assign_judges(posters, judges, reviews_per_poster):
                 'Board_Number': poster['Board_Number']
             })
 
-        # Update the assignment list with assigned judges per poster/presenter in a single "Assigned_Judges" value
-        assignment_list.append({
+        # Build the assigned dictionary for the current poster
+        assignment = {
             'Day': poster['Day'],
             'Board_Number': poster['Board_Number'],
             'FirstName': poster['FirstName'],
             'LastName': poster['LastName'],
             'Lab': poster['Lab'],
-            'Poster_Title': poster['Poster_Title'],
-            'Assigned_Judges': ", ".join(selected_judges)
-            # Try to turn this into multiple Judge columns instead
-        })
+            'Poster_Title': poster['Poster_Title']
+        }
+
+        # Create a key/value pair for each expected review based on reviews_per_poster
+        for i in range(1, reviews_per_poster + 1):
+            assignment[f'Judge_{i}'] = selected_judges[i-1]
+        assignment_list.append(assignment) 
     
     # Make it a pandas DF for easier Excel formatting later
     poster_assignments_df = pd.DataFrame(assignment_list)
 
     # Build the judge assignments DataFrame.
-    # It's basically one bulk cell containing all info about the poster to judge
     judge_assignments_list = []
     for judge, assignments in judge_assignments.items():
-        # Create a summary string for each assignment
         assignment_strs = [
-            f"{a['Day']} (Board {a['Board_Number']})"
-            for a in assignments
+            f"{a['Day']} (Board {a['Board_Number']})" for a in assignments
         ]
         judge_assignments_list.append({
             'Judge': judge,
-            'Assigned_Posters': ", ".join(assignment_strs)
+            'Assigned_Posters': ",".join(assignment_strs)
         })
     judge_assignments_df = pd.DataFrame(judge_assignments_list)
 
