@@ -28,7 +28,7 @@ def assign_poster_boards(posters, days=2):
     )
 
     # For robust sorting (especially if more than 2 days), extract the numeric part of the Day.
-    posters['Day_Num'] = posters['Day'].str.extract('(\d+)').astype(int)
+    posters['Day_Num'] = posters['Day'].str.extract(r'(\d+)').astype(int)
     # Map Session to sort order: AM first, then PM
     posters['Session_order'] = posters['Session'].map({'AM': 0, 'PM': 1})
 
