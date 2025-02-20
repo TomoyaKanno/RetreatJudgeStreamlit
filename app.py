@@ -73,14 +73,19 @@ def assign_judges(posters, judges, reviews_per_poster):
             'Day': poster['Day'],
             'Board_Number': poster['Board_Number'],
             'FirstName': poster['FirstName'],
-            'LastName': poster['LastName'],
-            'Lab': poster['Lab'],
-            'Poster_Title': poster['Poster_Title']
+            'LastName': poster['LastName']
         }
 
-        # Create a key/value pair for each expected review based on reviews_per_poster
+        # Insert judge columns immediately after 'LastName'
         for i in range(1, reviews_per_poster + 1):
             assignment[f'Judge_{i}'] = selected_judges[i-1]
+
+        # Append the remaining fields.
+        assignment.update({
+            'Lab': poster['Lab'],
+            'Poster_Title': poster['Poster_Title']
+        })
+        
         assignment_list.append(assignment) 
     
     # Make it a pandas DF for easier Excel formatting later
