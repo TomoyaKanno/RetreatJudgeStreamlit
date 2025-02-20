@@ -89,7 +89,7 @@ def assign_judges(posters, judges, reviews_per_poster):
 
     return poster_assignments_df, judge_assignments_df
 
-def generate_excel(poster_assignments_df, judge_assigments_df, poster_df, judge_df):
+def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, judges_df):
     """
     Generate an Excel workbook (in memory) with four sheets:
      Sheet 1: "Poster Assignments" (the new output)
