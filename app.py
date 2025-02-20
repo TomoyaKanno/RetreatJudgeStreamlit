@@ -112,8 +112,22 @@ def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, ju
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         poster_assignments_df.to_excel(writer, sheet_name="Poster Assignments", index=False)
         judge_assigments_df.to_excel(writer, sheet_name="Judge Review Assignments", index=False)
-        presenters_df.to_excel(writer, sheet_name="Poster Boards", index=False)
-        judges_df.to_excel(writer, sheet_name="Judge Assignments", index=False)
+        presenters_df.to_excel(writer, sheet_name="Original Presenter", index=False)
+        judges_df.to_excel(writer, sheet_name="Original Judges", index=False)
+
+        # auto-adjust column widths for each sheet.
+        for sheet_name in writer.sheets:
+            worksheet = writer.sheets[sheet_name]
+            for column_cells in worksheet.columns:
+                max_length = 0
+                # Get the column letter (e.g. A, B C)
+                column = column_cells[0].column_letter
+                for cell in column_cells:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                # Add a little extra space for readability
+                adjusted_width = max_length + 2
+                worksheet.column_dimensions[column].width = adjusted_width
     processed_data = output.getvalue()
     return processed_data
 
