@@ -125,34 +125,35 @@ def assign_judges(posters, judges, reviews_per_poster):
 
     return poster_assignments_df, judge_assignments_df
 
-def create_judge_schedule_pivot(judge_assignments):
+def create_judge_schedule_grid(judge_assignments):
     """
-    Create a pivot table showing judge assignments by day and session.
-    Returns a DataFrame with judges as rows and Day/Session combinations as columns.
+    Create a schedule grid showing judge assignments by day and session.
+    Returns a DataFrame with judges as rows and Day/Session combinations as columns,
+    where each cell contains the board numbers assigned to that judge for that time slot.
     """
-    # Initialize an empty dictionary to store the assignments
-    pivot_data = {}
+    # Initialize an empty dictionary to store the schedule
+    schedule_data = {}
     
     # Process each judge's assignments
     for judge, assignments in judge_assignments.items():
         # Initialize empty lists for each day/session combination
-        pivot_data[judge] = {
+        schedule_data[judge] = {
             ('Day 1', 'AM'): [],
             ('Day 1', 'PM'): [],
             ('Day 2', 'AM'): [],
             ('Day 2', 'PM'): []
         }
         
-        # Add board numbers to appropriate day/session
+        # Add board numbers to appropriate day/session timeslot
         for assignment in assignments:
             day = assignment['Day']
             session = assignment['Session']
             board = assignment['Board_Number']
-            pivot_data[judge][(day, session)].append(str(board))
+            schedule_data[judge][(day, session)].append(str(board))
     
     # Convert to DataFrame
     rows = []
-    for judge, schedule in pivot_data.items():
+    for judge, schedule in schedule_data.items():
         row = {'Judge': judge}
         for (day, session), boards in schedule.items():
             col_name = f"{day} {session}"
@@ -165,20 +166,17 @@ def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, ju
     """
     Generate an Excel workbook (in memory) with five sheets:
      Sheet 1: "Poster Assignments" (the new output)
-     Sheet 2: "Judge Review Assignments" (the mapping of the judges to assigned posters)
-     Sheet 3: "Judge Schedule" (pivot table of judge assignments)
+     Sheet 2: "Judge Schedule Grid" (timetable showing when and which boards each judge is assigned to)
+     Sheet 3: "Judge Review Assignments" (the mapping of the judges to assigned posters)
      Sheet 4: "Original Presenter" (the original presenters dataframe)
      Sheet 5: "Original Judges" (the original judges dataframe)
     """
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        # Write the standard sheets
+        # Write the sheets in the desired order
         poster_assignments_df.to_excel(writer, sheet_name="Poster Assignments", index=False)
-        judge_assigments_df.to_excel(writer, sheet_name="Judge Review Assignments", index=False)
-        presenters_df.to_excel(writer, sheet_name="Original Presenter", index=False)
-        judges_df.to_excel(writer, sheet_name="Original Judges", index=False)
         
-        # Create and write the pivot table
+        # Create and write the schedule grid as sheet 2
         # First, reconstruct the detailed assignments from poster_assignments_df
         judge_details = {}
         for _, row in poster_assignments_df.iterrows():
@@ -192,13 +190,18 @@ def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, ju
                     'Board_Number': row['Board_Number']
                 })
         
-        # Create the pivot table
-        schedule_df = create_judge_schedule_pivot(judge_details)
-        schedule_df.to_excel(writer, sheet_name="Judge Schedule", index=False)
+        # Create and write the schedule grid
+        schedule_df = create_judge_schedule_grid(judge_details)
+        schedule_df.to_excel(writer, sheet_name="Judge Schedule Grid", index=False)
         
-        # Format the Judge Schedule sheet
+        # Write remaining sheets
+        judge_assigments_df.to_excel(writer, sheet_name="Judge Review Assignments", index=False)
+        presenters_df.to_excel(writer, sheet_name="Original Presenter", index=False)
+        judges_df.to_excel(writer, sheet_name="Original Judges", index=False)
+        
+        # Format the Judge Schedule Grid sheet
         workbook = writer.book
-        schedule_sheet = writer.sheets["Judge Schedule"]
+        schedule_sheet = writer.sheets["Judge Schedule Grid"]
         
         # Apply borders to all cells
         thin_border = openpyxl.styles.Border(
