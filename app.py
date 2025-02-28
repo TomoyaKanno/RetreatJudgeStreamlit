@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import openpyxl # Do I need this? Remove to test at some point
+import openpyxl
 import math
 from io import BytesIO
 
@@ -12,6 +12,9 @@ def assign_poster_boards(posters, days=2):
     """
     Shuffle posters and assign each one a day and board number.
     The simple logic here assigns the first half to Day 1 and the rest to Day 2.
+
+    Then the odd numbered Boards are assigned to the AM session, even to PM.
+    Finally, posters are sorted to appear in chronological order
     """
     posters = posters.sample(frac=1).reset_index(drop=True)
     n = len(posters)
@@ -50,10 +53,12 @@ def assign_judges(posters, judges, reviews_per_poster):
     - judge_assignments_df: for each judge, a list of assigned posters with details.
     """
     # Initialize judge load and assignments dictionaries
+    # Judge load is our method to track who has how many assignments so far
     judge_load = {judge: 0 for judge in judges['Name']}
     judge_assignments = {judge: [] for judge in judges['Name']}
     assignment_list = []
     
+    # Go row by row assigning judges one row at a time
     for idx, poster in posters.iterrows():
         poster_lab = poster['Lab']
         # Try to exclude judges from the same lab.
@@ -130,6 +135,8 @@ def create_judge_schedule_grid(judge_assignments):
     Create a schedule grid showing judge assignments by day and session.
     Returns a DataFrame with judges as rows and Day/Session combinations as columns,
     where each cell contains the board numbers assigned to that judge for that time slot.
+    If Martyn is reading this, this is the bit you said was the most important.
+    I put it in a new sheet because that felt simplest.
     """
     # Initialize an empty dictionary to store the schedule
     schedule_data = {}
@@ -137,6 +144,8 @@ def create_judge_schedule_grid(judge_assignments):
     # Process each judge's assignments
     for judge, assignments in judge_assignments.items():
         # Initialize empty lists for each day/session combination
+        # Yeah this is hardcoded for 2 days 2 sessions, maybe I'll make it more flexible
+        # ... Some other day (Or someone else can do it next year)
         schedule_data[judge] = {
             ('Day 1', 'AM'): [],
             ('Day 1', 'PM'): [],
@@ -149,9 +158,13 @@ def create_judge_schedule_grid(judge_assignments):
             day = assignment['Day']
             session = assignment['Session']
             board = assignment['Board']
+            # Using strings because it's easier to comma separate them later
             schedule_data[judge][(day, session)].append(str(board))
     
     # Convert to DataFrame
+    # I'm doing a lot of DF conversions... is this the right path?
+    # IDK it works tho.
+    # Pretty much a technicality, you can ignore the DF conversion parts unless they break.
     rows = []
     for judge, schedule in schedule_data.items():
         row = {'Judge': judge}
@@ -168,13 +181,11 @@ def format_worksheet_header(worksheet):
     - Bold, larger font
     - Thick bottom border
     - Light orange background
-    - Freeze pane below header
+    - Freeze pane below header <- might be too much
     """
-    # Get the dimensions
-    max_col = worksheet.max_column
     
     # Define styles
-    header_font = openpyxl.styles.Font(bold=True, size=16)
+    header_font = openpyxl.styles.Font(bold=True, size=15)
     header_border = openpyxl.styles.Border(
         left=openpyxl.styles.Side(style='thin'),
         right=openpyxl.styles.Side(style='thin'),
@@ -188,7 +199,7 @@ def format_worksheet_header(worksheet):
     )
     
     # Apply styles to header row
-    for col in range(1, max_col + 1):
+    for col in range(1, worksheet.max_column + 1):
         cell = worksheet.cell(row=1, column=col)
         cell.font = header_font
         cell.border = header_border
