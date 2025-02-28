@@ -174,7 +174,7 @@ def format_worksheet_header(worksheet):
     max_col = worksheet.max_column
     
     # Define styles
-    header_font = openpyxl.styles.Font(bold=True, size=12)
+    header_font = openpyxl.styles.Font(bold=True, size=16)
     header_border = openpyxl.styles.Border(
         left=openpyxl.styles.Side(style='thin'),
         right=openpyxl.styles.Side(style='thin'),
@@ -271,7 +271,7 @@ def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, ju
                 for cell in column_cells:
                     if cell.value:
                         max_length = max(max_length, len(str(cell.value)))
-                worksheet.column_dimensions[column].width = max_length
+                worksheet.column_dimensions[column].width = max_length + 4
     
     processed_data = output.getvalue()
     return processed_data
