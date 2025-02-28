@@ -18,13 +18,13 @@ def assign_poster_boards(posters, days=2):
     # Create a Day column: first n//days for Day 1 and the remainder for Day 2.
     posters['Day'] = ['Day 1'] * (n // days) + ['Day 2'] * (n - n // days)
     # Assign board numbers within each day.
-    posters['Board_Number'] = posters.groupby('Day').cumcount() + 1
+    posters['Board'] = posters.groupby('Day').cumcount() + 1
 
     # Add Session column (AM/PM)
     posters.insert(
         posters.columns.get_loc('Day') + 1,
         'Session',
-        posters['Board_Number'].apply(lambda x: 'AM' if x % 2 == 1 else 'PM')
+        posters['Board'].apply(lambda x: 'AM' if x % 2 == 1 else 'PM')
     )
 
     # For robust sorting (especially if more than 2 days), extract the numeric part of the Day.
@@ -32,10 +32,10 @@ def assign_poster_boards(posters, days=2):
     # Map Session to sort order: AM first, then PM
     posters['Session_order'] = posters['Session'].map({'AM': 0, 'PM': 1})
 
-    # Sort by Day number, then by Session and finally by Board_Number
+    # Sort by Day number, then by Session and finally by Board
     posters = posters.sort_values(
-        by=['Day_Num', 'Session_order', 'Board_Number']
-    ).drop(['Day_Num', 'Session_order'], axis =1) # Drop the Day_Num and Session_order columns that were only used for sorting
+        by=['Day_Num', 'Session_order', 'Board']
+    ).drop(['Day_Num', 'Session_order'], axis=1) # Drop the Day_Num and Session_order columns that were only used for sorting
 
     return posters
 
@@ -71,7 +71,7 @@ def assign_judges(posters, judges, reviews_per_poster):
         if len(selected_judges) < reviews_per_poster:
             error_message = (
                 f"Error: Not enough judges available for poster '{poster['Poster_Title']}' "
-                f"on {poster['Day']} at Board {poster['Board_Number']}. "
+                f"on {poster['Day']} at Board {poster['Board']}. "
                 f"Required {reviews_per_poster} judges, but only {len(selected_judges)} were found. "
                 "Please add more judges or adjust the eligibility criteria."
             )
@@ -84,14 +84,14 @@ def assign_judges(posters, judges, reviews_per_poster):
                 'Poster_Title': poster['Poster_Title'],
                 'Day': poster['Day'],
                 'Session': poster['Session'],
-                'Board_Number': poster['Board_Number']
+                'Board': poster['Board']
             })
 
         # Build the assigned dictionary for the current poster
         assignment = {
             'Day': poster['Day'],
             'Session': poster['Session'],
-            'Board_Number': poster['Board_Number'],
+            'Board': poster['Board'],
             'FirstName': poster['FirstName'],
             'LastName': poster['LastName']
         }
@@ -115,7 +115,7 @@ def assign_judges(posters, judges, reviews_per_poster):
     judge_assignments_list = []
     for judge, assignments in judge_assignments.items():
         assignment_strs = [
-            f"{a['Day']} (Board {a['Board_Number']})" for a in assignments
+            f"{a['Day']} (Board {a['Board']})" for a in assignments
         ]
         judge_assignments_list.append({
             'Judge': judge,
@@ -148,7 +148,7 @@ def create_judge_schedule_grid(judge_assignments):
         for assignment in assignments:
             day = assignment['Day']
             session = assignment['Session']
-            board = assignment['Board_Number']
+            board = assignment['Board']
             schedule_data[judge][(day, session)].append(str(board))
     
     # Convert to DataFrame
@@ -187,7 +187,7 @@ def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, ju
                 judge_details[judge_name].append({
                     'Day': row['Day'],
                     'Session': row['Session'],
-                    'Board_Number': row['Board_Number']
+                    'Board': row['Board']
                 })
         
         # Create and write the schedule grid
@@ -296,12 +296,15 @@ if st.button("Generate Assignments"):
             st.error(f"Judge sheet must contain these columns: {required_judge_cols}")
         else:
             try:
+                # Store original presenter data before modifications
+                original_presenters_df = presenters_df.copy()
+                
                 # Step 1: Assign poster boards
                 presenters_df = assign_poster_boards(presenters_df, days=2)
                 # Step 2: Assign judges using load balancing
                 poster_assignments_df, judge_assignments_df = assign_judges(presenters_df, judges_df, reviews_per_poster)
                 # Step 3: Generate Excel workbook with five sheets
-                excel_data = generate_excel(poster_assignments_df, judge_assignments_df, presenters_df, judges_df)
+                excel_data = generate_excel(poster_assignments_df, judge_assignments_df, original_presenters_df, judges_df)
                 
                 st.success("Assignments generated successfully!")
                 st.download_button(
@@ -312,7 +315,7 @@ if st.button("Generate Assignments"):
                 )
 
                 # Physical Boards needed calculation
-                max_board = presenters_df['Board_Number'].max()
+                max_board = presenters_df['Board'].max()
                 physical_boards = math.ceil(max_board / 2)
                 st.write(f"Maximum Physical Boards Needed: {physical_boards}")
 
