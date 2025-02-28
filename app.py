@@ -125,34 +125,118 @@ def assign_judges(posters, judges, reviews_per_poster):
 
     return poster_assignments_df, judge_assignments_df
 
+def create_judge_schedule_pivot(judge_assignments):
+    """
+    Create a pivot table showing judge assignments by day and session.
+    Returns a DataFrame with judges as rows and Day/Session combinations as columns.
+    """
+    # Initialize an empty dictionary to store the assignments
+    pivot_data = {}
+    
+    # Process each judge's assignments
+    for judge, assignments in judge_assignments.items():
+        # Initialize empty lists for each day/session combination
+        pivot_data[judge] = {
+            ('Day 1', 'AM'): [],
+            ('Day 1', 'PM'): [],
+            ('Day 2', 'AM'): [],
+            ('Day 2', 'PM'): []
+        }
+        
+        # Add board numbers to appropriate day/session
+        for assignment in assignments:
+            day = assignment['Day']
+            session = assignment['Session']
+            board = assignment['Board_Number']
+            pivot_data[judge][(day, session)].append(str(board))
+    
+    # Convert to DataFrame
+    rows = []
+    for judge, schedule in pivot_data.items():
+        row = {'Judge': judge}
+        for (day, session), boards in schedule.items():
+            col_name = f"{day} {session}"
+            row[col_name] = ", ".join(boards) if boards else ""
+        rows.append(row)
+    
+    return pd.DataFrame(rows)
+
 def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, judges_df):
     """
-    Generate an Excel workbook (in memory) with four sheets:
+    Generate an Excel workbook (in memory) with five sheets:
      Sheet 1: "Poster Assignments" (the new output)
      Sheet 2: "Judge Review Assignments" (the mapping of the judges to assigned posters)
-     Sheet 3: "Original Presenter" (the original presenters dataframe)
-     Sheet 4: "Original Judges" (the original judges dataframe)
+     Sheet 3: "Judge Schedule" (pivot table of judge assignments)
+     Sheet 4: "Original Presenter" (the original presenters dataframe)
+     Sheet 5: "Original Judges" (the original judges dataframe)
     """
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        # Write the standard sheets
         poster_assignments_df.to_excel(writer, sheet_name="Poster Assignments", index=False)
         judge_assigments_df.to_excel(writer, sheet_name="Judge Review Assignments", index=False)
         presenters_df.to_excel(writer, sheet_name="Original Presenter", index=False)
         judges_df.to_excel(writer, sheet_name="Original Judges", index=False)
-
-        # auto-adjust column widths for each sheet.
+        
+        # Create and write the pivot table
+        # First, reconstruct the detailed assignments from poster_assignments_df
+        judge_details = {}
+        for _, row in poster_assignments_df.iterrows():
+            for i in range(1, len([col for col in poster_assignments_df.columns if col.startswith('Judge_')]) + 1):
+                judge_name = row[f'Judge_{i}']
+                if judge_name not in judge_details:
+                    judge_details[judge_name] = []
+                judge_details[judge_name].append({
+                    'Day': row['Day'],
+                    'Session': row['Session'],
+                    'Board_Number': row['Board_Number']
+                })
+        
+        # Create the pivot table
+        schedule_df = create_judge_schedule_pivot(judge_details)
+        schedule_df.to_excel(writer, sheet_name="Judge Schedule", index=False)
+        
+        # Format the Judge Schedule sheet
+        workbook = writer.book
+        schedule_sheet = writer.sheets["Judge Schedule"]
+        
+        # Apply borders to all cells
+        thin_border = openpyxl.styles.Border(
+            left=openpyxl.styles.Side(style='thin'),
+            right=openpyxl.styles.Side(style='thin'),
+            top=openpyxl.styles.Side(style='thin'),
+            bottom=openpyxl.styles.Side(style='thin')
+        )
+        
+        # Get the dimensions of the data
+        max_row = schedule_sheet.max_row
+        max_col = schedule_sheet.max_column
+        
+        # Apply borders and center alignment to all cells
+        for row in range(1, max_row + 1):
+            for col in range(1, max_col + 1):
+                cell = schedule_sheet.cell(row=row, column=col)
+                cell.border = thin_border
+                cell.alignment = openpyxl.styles.Alignment(horizontal='center')
+        
+        # Make the header row bold
+        for col in range(1, max_col + 1):
+            cell = schedule_sheet.cell(row=1, column=col)
+            cell.font = openpyxl.styles.Font(bold=True)
+        
+        # auto-adjust column widths for each sheet
         for sheet_name in writer.sheets:
             worksheet = writer.sheets[sheet_name]
             for column_cells in worksheet.columns:
                 max_length = 0
-                # Get the column letter (e.g. A, B C)
                 column = column_cells[0].column_letter
                 for cell in column_cells:
                     if cell.value:
                         max_length = max(max_length, len(str(cell.value)))
-                # Add a little extra space for readability
-                adjusted_width = max_length + 2
+                # Add extra space for readability
+                adjusted_width = max_length + 4
                 worksheet.column_dimensions[column].width = adjusted_width
+    
     processed_data = output.getvalue()
     return processed_data
 
@@ -213,7 +297,7 @@ if st.button("Generate Assignments"):
                 presenters_df = assign_poster_boards(presenters_df, days=2)
                 # Step 2: Assign judges using load balancing
                 poster_assignments_df, judge_assignments_df = assign_judges(presenters_df, judges_df, reviews_per_poster)
-                # Step 3: Generate Excel workbook with four sheets
+                # Step 3: Generate Excel workbook with five sheets
                 excel_data = generate_excel(poster_assignments_df, judge_assignments_df, presenters_df, judges_df)
                 
                 st.success("Assignments generated successfully!")
