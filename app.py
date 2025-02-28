@@ -162,6 +162,42 @@ def create_judge_schedule_grid(judge_assignments):
     
     return pd.DataFrame(rows)
 
+def format_worksheet_header(worksheet):
+    """
+    Apply consistent header formatting to a worksheet:
+    - Bold, larger font
+    - Thick bottom border
+    - Light orange background
+    - Freeze pane below header
+    """
+    # Get the dimensions
+    max_col = worksheet.max_column
+    
+    # Define styles
+    header_font = openpyxl.styles.Font(bold=True, size=12)
+    header_border = openpyxl.styles.Border(
+        left=openpyxl.styles.Side(style='thin'),
+        right=openpyxl.styles.Side(style='thin'),
+        top=openpyxl.styles.Side(style='thin'),
+        bottom=openpyxl.styles.Side(style='thick')
+    )
+    header_fill = openpyxl.styles.PatternFill(
+        start_color='FFF2E6',  # Light orange
+        end_color='FFF2E6',
+        fill_type='solid'
+    )
+    
+    # Apply styles to header row
+    for col in range(1, max_col + 1):
+        cell = worksheet.cell(row=1, column=col)
+        cell.font = header_font
+        cell.border = header_border
+        cell.fill = header_fill
+        cell.alignment = openpyxl.styles.Alignment(horizontal='center')
+    
+    # Freeze pane below header
+    worksheet.freeze_panes = 'A2'
+
 def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, judges_df):
     """
     Generate an Excel workbook (in memory) with five sheets:
@@ -199,37 +235,36 @@ def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, ju
         presenters_df.to_excel(writer, sheet_name="Original Presenter", index=False)
         judges_df.to_excel(writer, sheet_name="Original Judges", index=False)
         
-        # Format the Judge Schedule Grid sheet
+        # Format all sheets
         workbook = writer.book
-        schedule_sheet = writer.sheets["Judge Schedule Grid"]
-        
-        # Apply borders to all cells
-        thin_border = openpyxl.styles.Border(
-            left=openpyxl.styles.Side(style='thin'),
-            right=openpyxl.styles.Side(style='thin'),
-            top=openpyxl.styles.Side(style='thin'),
-            bottom=openpyxl.styles.Side(style='thin')
-        )
-        
-        # Get the dimensions of the data
-        max_row = schedule_sheet.max_row
-        max_col = schedule_sheet.max_column
-        
-        # Apply borders and center alignment to all cells
-        for row in range(1, max_row + 1):
-            for col in range(1, max_col + 1):
-                cell = schedule_sheet.cell(row=row, column=col)
-                cell.border = thin_border
-                cell.alignment = openpyxl.styles.Alignment(horizontal='center')
-        
-        # Make the header row bold
-        for col in range(1, max_col + 1):
-            cell = schedule_sheet.cell(row=1, column=col)
-            cell.font = openpyxl.styles.Font(bold=True)
-        
-        # auto-adjust column widths for each sheet
         for sheet_name in writer.sheets:
             worksheet = writer.sheets[sheet_name]
+            
+            # Apply header formatting to all sheets
+            format_worksheet_header(worksheet)
+            
+            # Additional grid formatting for Judge Schedule Grid
+            if sheet_name == "Judge Schedule Grid":
+                # Apply borders to all cells
+                thin_border = openpyxl.styles.Border(
+                    left=openpyxl.styles.Side(style='thin'),
+                    right=openpyxl.styles.Side(style='thin'),
+                    top=openpyxl.styles.Side(style='thin'),
+                    bottom=openpyxl.styles.Side(style='thin')
+                )
+                
+                # Get the dimensions of the data
+                max_row = worksheet.max_row
+                max_col = worksheet.max_column
+                
+                # Apply borders and center alignment to all cells (except header)
+                for row in range(2, max_row + 1):
+                    for col in range(1, max_col + 1):
+                        cell = worksheet.cell(row=row, column=col)
+                        cell.border = thin_border
+                        cell.alignment = openpyxl.styles.Alignment(horizontal='center')
+            
+            # Auto-adjust column widths
             for column_cells in worksheet.columns:
                 max_length = 0
                 column = column_cells[0].column_letter
