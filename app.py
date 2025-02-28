@@ -236,9 +236,7 @@ def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, ju
                 for cell in column_cells:
                     if cell.value:
                         max_length = max(max_length, len(str(cell.value)))
-                # Add extra space for readability
-                adjusted_width = max_length + 4
-                worksheet.column_dimensions[column].width = adjusted_width
+                worksheet.column_dimensions[column].width = max_length
     
     processed_data = output.getvalue()
     return processed_data
