@@ -7,3 +7,6 @@
 # PyInstaller build and distribution directories
 build/
 dist/
+
+# API ignore thing
+rsconnect-python/
