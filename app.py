@@ -351,17 +351,31 @@ if st.button("Generate Assignments"):
                 excel_data = generate_excel(poster_assignments_df, judge_assignments_df, original_presenters_df, judges_df)
                 
                 st.success("Assignments generated successfully!")
+
+                # Recreate judge_details dictionary before displaying the matrix
+                judge_details = {}
+                for _, row in poster_assignments_df.iterrows():
+                    for i in range(1, len([col for col in poster_assignments_df.columns if col.startswith('Judge_')]) + 1):
+                        judge_name = row[f'Judge_{i}']
+                        if judge_name not in judge_details:
+                            judge_details[judge_name] = []
+                        judge_details[judge_name].append({
+                            'Day': row['Day'],
+                            'Session': row['Session'],
+                            'Board': row['Board']
+                        })
+
+                # Display judge schedule grid in UI
+                st.subheader("Judge Assignment Matrix")
+                schedule_df = create_judge_schedule_grid(judge_details)
+                st.dataframe(schedule_df)
+
                 st.download_button(
                     label="Download Assignment Excel",
                     data=excel_data,
                     file_name="poster_judge_assignments.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
-
-                # Display judge schedule grid in UI
-                st.subheader("Judge Assignment Matrix")
-                schedule_df = create_judge_schedule_grid(judge_details)
-                st.dataframe(schedule_df) 
 
                 # Physical Boards needed calculation
                 max_board = presenters_df['Board'].max()
