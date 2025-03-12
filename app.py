@@ -358,6 +358,11 @@ if st.button("Generate Assignments"):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
+                # Display judge schedule grid in UI
+                st.subheader("Judge Assignment Matrix")
+                schedule_df = create_judge_schedule_grid(judge_details)
+                st.dataframe(schedule_df) 
+
                 # Physical Boards needed calculation
                 max_board = presenters_df['Board'].max()
                 physical_boards = math.ceil(max_board / 2)
