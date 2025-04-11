@@ -108,7 +108,8 @@ def assign_judges(posters, judges, reviews_per_poster):
         # Append the remaining fields.
         assignment.update({
             'Lab': poster['Lab'],
-            'Poster_Title': poster['Poster_Title']
+            'Poster_Title': poster['Poster_Title'],
+            'role': poster['role']
         })
 
         assignment_list.append(assignment) 
