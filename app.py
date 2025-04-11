@@ -109,7 +109,7 @@ def assign_judges(posters, judges, reviews_per_poster):
         assignment.update({
             'Lab': poster['Lab'],
             'Poster_Title': poster['Poster_Title'],
-            'role': poster['role']
+            'Role': poster['Role']
         })
 
         assignment_list.append(assignment) 
@@ -333,7 +333,7 @@ if st.button("Generate Assignments"):
         st.error("Please upload an Excel file with one page for presenters and one page for judges.")
     else:
         # Check that required columns are present.
-        required_poster_cols = {"FirstName", "LastName", "Lab", "Poster_Title"}
+        required_poster_cols = {"FirstName", "LastName", "Lab", "Poster_Title", "Role"}
         required_judge_cols = {"Name", "Lab"}
         if not required_poster_cols.issubset(presenters_df.columns):
             st.error(f"Presenter sheet must contain these columns: {required_poster_cols}")
