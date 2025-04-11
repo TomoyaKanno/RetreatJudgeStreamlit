@@ -294,12 +294,12 @@ def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, ju
 
 # --- Logo and Title ---
 # Create two columns: one narrow for the logo, one wider for the title
-col1, col2 = st.columns([1,5])
+col1, col2 = st.columns([2,5])
 
 with col1:
-    st.image("logo.png", width=100)
+    st.image("logo.png", width=400)
 with col2:
-    st.title("EZ-Judge")
+    st.title("Poster & Judge Assignment Tool")
 
 # st.title("Poster & Judge Assignment Tool")
 st.markdown("""
