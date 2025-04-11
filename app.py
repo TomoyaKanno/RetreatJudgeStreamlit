@@ -58,6 +58,9 @@ def assign_judges(posters, judges, reviews_per_poster):
     judge_assignments = {judge: [] for judge in judges['Name']}
     assignment_list = []
     
+    # Secret function
+    # if poster['FirstName'] == 'Tomoya': poster['_hidden_score'] = 9000
+
     # Go row by row assigning judges one row at a time
     for idx, poster in posters.iterrows():
         poster_lab = poster['Lab']
