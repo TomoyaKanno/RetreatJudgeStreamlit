@@ -292,7 +292,16 @@ def generate_excel(poster_assignments_df, judge_assigments_df, presenters_df, ju
 # Streamlit UI components
 # ---------------------
 
-st.title("Poster & Judge Assignment Tool")
+# --- Logo and Title ---
+# Create two columns: one narrow for the logo, one wider for the title
+col1, col2 = st.columns([1,5])
+
+with col1:
+    st.image("logo.png", width=100)
+with col2:
+    st.title("EZ-Judge")
+
+# st.title("Poster & Judge Assignment Tool")
 st.markdown("""
 This tool assigns poster boards and judge reviews for your poster presentation event.
 Upload the Excel files with poster presenter details and judge details, set the number of reviews per poster,
