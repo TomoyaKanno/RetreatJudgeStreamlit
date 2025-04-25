@@ -6,7 +6,7 @@ import math
 from io import BytesIO
 
 # Set a fixed random seed for reproducibility.
-np.random.seed(42)
+# np.random.seed(42)
 
 def assign_poster_boards(posters, days=2):
     """
